@@ -1,0 +1,10 @@
+gunicorn
+flask
+langchain
+langchain_openai
+python_dotenv
+langchain_google_firestore
+langchain_google_vertexai
+firebase_admin
+langchain_community
+langchain_text_splitters
