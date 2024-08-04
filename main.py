@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, logging, request
 from langchain_google_firestore import FirestoreVectorStore
 from langchain_google_vertexai import VertexAIEmbeddings
 from langchain.pdf_loader import load_and_split_pdf
@@ -7,6 +7,8 @@ import numpy as np
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore
+from file_search import file_search
+import prompt_template
 
 # Load environment variables
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -35,101 +37,50 @@ embedding = VertexAIEmbeddings(
     project=project_id,
 )
 
+bookExtraction = prompt_template.BookExtraction
+questionMaker = prompt_template.QuestionMaker
 
-@app.route('/search', methods=['POST'])
-def search_endpoint():
-    if request.content_type != 'application/json':
-        return jsonify({'error': 'Request must be in JSON format'}), 400
+# Get the base upload directory from the environment variable or use 'uploads' as default
+base_upload_dir = os.getenv('TEMP_DIR', 'uploads')
 
-    data = request.get_json()
-    query_text = data.get('query_text')
-    book_id = data.get('book_id')
+# Customize the folder path, e.g., TEMP_DIR/temp
+custom_upload_dir = os.path.join(base_upload_dir, 'temp')
 
-    if not query_text:
-        return jsonify({'error': 'Query text is required'}), 400
+# Ensure the custom directory exists
+os.makedirs(custom_upload_dir, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = custom_upload_dir
 
-    if not book_id:
-        return jsonify({'error': 'Book ID is required'}), 400
 
-    try:
-        # Fetch embeddings from Firestore
-        vector_store_path = f'books/{book_id}/vector_store'
-        vector_store = FirestoreVectorStore(
-            collection=vector_store_path,
-            embedding_service=embedding
-        )   
-        print(vector_store_path)
-        results= vector_store.similarity_search(query_text, k=3)
+@app.route('/ekstrak-info', methods=['POST'])
+def uploadFile():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part in the request'}), 400
 
-        # Assuming `results` is a list of objects, extract the needed data
-        serializable_results = []
-        for result in results:
-            # Otherwise, just convert the result to a dictionary
-            serializable_results.append({ 
-                "result": result.page_content
-            })
+    file = request.files['file']
 
-        return jsonify({'results': serializable_results}), 200
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
     
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/vector_store', methods=['POST'])
-def vector_store_endpoint():
-    if request.content_type != 'application/json':
-        return jsonify({'error': 'Request must be in JSON format'}), 400
-
-
-    data = request.get_json()
-    pdf_path = data.get('pdf_path')
-    book_id = 'book_1'
-
-    if not pdf_path or not os.path.exists(pdf_path):
-        return jsonify({'error': 'File not found'}), 400
-
-    if not book_id:
-        return jsonify({'error': 'Book ID is required'}), 400
-
     try:
-        # Load and split the PDF content
-        pages = load_and_split_pdf(pdf_path)
-        texts = [str(page) for page in pages]  # Convert each page to a string
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(file_path)
 
-        # Store each page and its embedding using FirestoreVectorStore
-        vector_store_path = f'books/{book_id}/vector_store'
-        vector_store = FirestoreVectorStore(
-            collection=vector_store_path,
-            embedding_service=embedding
-        )   
-        vector_store.add_texts(texts, ids=[f'page_{i}' for i in range(len(texts))])
-        
-        return jsonify({'message': 'Texts and embeddings added successfully to the vector store'}), 200
+        return jsonify({'data':  file_search(
+            description=bookExtraction.description, 
+            instruction=bookExtraction.instruction, 
+            prompt_template=bookExtraction.bookExtractionTemplate, 
+            filePath=file_path
+        )})
+    except Exception as e: 
+        print(f"Error: {e}")
+        return jsonify({'error': 'An error occurred while processing the request'}), 500
 
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
-@app.route('/load_pdf', methods=['POST'])
-def load_pdf():
-    if request.content_type != 'application/json':
-        return jsonify({'error': 'Request must be in JSON format'}), 400
 
-    data = request.get_json()
-    pdf_path = data.get('pdf_path')
-
-    if not pdf_path or not os.path.exists(pdf_path):
-        return jsonify({'error': 'File not found'}), 400
-
-    try:
-        pages = load_and_split_pdf(pdf_path)
-        pages_str = [str(page) for page in pages]
-        return jsonify({'pages': pages_str}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/')
 def hello():
-    return "Hello, World!"
+    return "Hello, New World!"
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
