@@ -5,10 +5,9 @@ from dotenv import load_dotenv
 import os
 
 # Load environment variables
-dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-load_dotenv(dotenv_path)
+load_dotenv()
 
-MY_OPENAI_KEY = os.getenv('API_KEY')  # Add your OpenAI API key
+MY_OPENAI_KEY = os.environ.get('API_KEY')  # Add your OpenAI API key
 client = OpenAI(api_key=MY_OPENAI_KEY)
 
 
