@@ -86,8 +86,8 @@ def file_search(description, instruction, prompt_template, filePath):
 
     # Parse the JSON output
     data = json.loads(res_txt)
+    client.files.delete(file.id)
 
     return data
 
     # Delete the file(s) afterward to preserve space (max 100gb/company)
-    # delete_ok = client.files.delete(file.id)

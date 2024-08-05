@@ -5,7 +5,6 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from file_search import file_search
 import prompt_template
-from google.cloud import pubsub_v1
 
 # Load environment variables
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -28,17 +27,8 @@ firebase_admin.initialize_app(cred, {
 
 db = firestore.client()
 
-publisher = pubsub_v1.PublisherClient()
-topic_path = publisher.topic_path(project_id, os.getenv('GC_PUBSUB_EP_TOPIC'))
-
-# # Initialize the VertexAIEmbeddings
-# embedding = VertexAIEmbeddings(
-#     model_name="textembedding-gecko-multilingual@001",
-#     project=project_id,
-# )
 
 bookExtraction = prompt_template.BookExtraction
-questionMaker = prompt_template.QuestionMaker
 
 # Get the base upload directory from the environment variable or use 'uploads' as default
 base_upload_dir = os.getenv('TEMP_DIR', 'uploads')
@@ -114,7 +104,27 @@ def upload_file():
             print(f'Error adding subjects: {e}')
             return jsonify({'error': 'Failed to add subjects'}), 500
 
-    return jsonify({'data': extractData})
+    return jsonify({'data': extractData, 'message': "succesfully extracting data from file"})
+
+@app.route('/question-maker', methods=['POST'])
+def question_maker():
+
+    topic = request.form.get('topic')
+    number = request.form.get('number')
+    difficulty = request.form.get('difficulty')
+    questionMaker = prompt_template.QuestionMaker(topic=topic, number=number, difficulty=difficulty)
+
+    extractData = file_search(
+        description=questionMaker.description, 
+        instruction=questionMaker.instruction, 
+        prompt_template=questionMaker.questionMakerTemplate, 
+        filePath=file_path
+    )
+
+    print(f'extractData: {extractData}')
+
+
+    return jsonify({'data': extractData, 'message': "succesfully extracting data from file"})
     
 
 
@@ -125,4 +135,4 @@ def hello():
     return "Hello, New World!"
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)

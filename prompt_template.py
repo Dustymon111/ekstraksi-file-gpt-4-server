@@ -4,7 +4,7 @@ class BookExtraction:
     bookExtractionTemplate = '''
                 give me the exact title, author, and the lists and very brief description of TOC (if TOC exists) or topics from the file, desired output in json. example:
                 {   
-                    'title' : 'article or book or module title (usually Bold, found in the first page)',
+                    'title' : 'article or book or module title (usually Bold, largest font size, found in the first page)',
                     'author' : ['author', ...] (full name, if exists, could be on "edited by", or "written by". if doesn't exist, return [N/A]),
                     'topics': [
                     {
