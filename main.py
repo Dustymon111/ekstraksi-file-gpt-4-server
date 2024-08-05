@@ -1,14 +1,11 @@
 from flask import Flask, jsonify, logging, request
-from langchain_google_firestore import FirestoreVectorStore
-from langchain_google_vertexai import VertexAIEmbeddings
-from langchain.pdf_loader import load_and_split_pdf
 from dotenv import load_dotenv
-import numpy as np
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore
 from file_search import file_search
 import prompt_template
+from google.cloud import pubsub_v1
 
 # Load environment variables
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -31,11 +28,14 @@ firebase_admin.initialize_app(cred, {
 
 db = firestore.client()
 
-# Initialize the VertexAIEmbeddings
-embedding = VertexAIEmbeddings(
-    model_name="textembedding-gecko-multilingual@001",
-    project=project_id,
-)
+publisher = pubsub_v1.PublisherClient()
+topic_path = publisher.topic_path(project_id, os.getenv('GC_PUBSUB_EP_TOPIC'))
+
+# # Initialize the VertexAIEmbeddings
+# embedding = VertexAIEmbeddings(
+#     model_name="textembedding-gecko-multilingual@001",
+#     project=project_id,
+# )
 
 bookExtraction = prompt_template.BookExtraction
 questionMaker = prompt_template.QuestionMaker
@@ -52,28 +52,70 @@ app.config['UPLOAD_FOLDER'] = custom_upload_dir
 
 
 @app.route('/ekstrak-info', methods=['POST'])
-def uploadFile():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part in the request'}), 400
-
+def upload_file():
     file = request.files['file']
+    userId = request.form.get('userId')
+    bookUrl = request.form.get('bookUrl')
+    totalPages = request.form.get('totalPages')
 
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+    file.save(file_path)
+
+    extractData = file_search(
+        description=bookExtraction.description, 
+        instruction=bookExtraction.instruction, 
+        prompt_template=bookExtraction.bookExtractionTemplate, 
+        filePath=file_path
+    )
+
+    print(f'extractData: {extractData}')
+
+    # Fetch books for the current user
+    books_ref = db.collection('books')
+    book_query = books_ref.where('userId', '==', userId).stream()
+
+    # Check for duplicates
+    is_duplicate = any(
+        doc.to_dict().get('title') == extractData['title'] and
+        doc.to_dict().get('author') == extractData['author']
+        for doc in book_query
+    )
+
+    if not is_duplicate:
+        # Create a new document reference for the book
+        try:
+            new_book_ref = books_ref.add({
+                "title": extractData['title'],
+                "author": extractData['author'],
+                "bookUrl": bookUrl,
+                "totalPages": int(totalPages),
+                "userId": userId
+            })
+        except Exception as e:
+            print(f'Error creating book document: {e}')
+            return jsonify({'error': 'Failed to create book document'}), 500
+        
+        print(f'new_book_ref: {new_book_ref[1].id}')  # Debug output
+        new_book_id = new_book_ref[1].id
+        # Add new documents in the 'subjects' subcollection
+        try:
+            subjects_ref = books_ref.document(new_book_id).collection('subjects')
+            for i, subject in enumerate(extractData['topics']):
+                subject_data = {
+                    'title': subject['title'],
+                    'description': subject['description'],
+                    'questionSetIds': [],
+                    'bookmarkId': new_book_id,
+                    'sortIndex': i,
+                }
+                print(f'Adding subject: {subject_data}')  # Debug output
+                subjects_ref.add(subject_data)
+        except Exception as e:
+            print(f'Error adding subjects: {e}')
+            return jsonify({'error': 'Failed to add subjects'}), 500
+
+    return jsonify({'data': extractData})
     
-    try:
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-        file.save(file_path)
-
-        return jsonify({'data':  file_search(
-            description=bookExtraction.description, 
-            instruction=bookExtraction.instruction, 
-            prompt_template=bookExtraction.bookExtractionTemplate, 
-            filePath=file_path
-        )})
-    except Exception as e: 
-        print(f"Error: {e}")
-        return jsonify({'error': 'An error occurred while processing the request'}), 500
 
 
 
