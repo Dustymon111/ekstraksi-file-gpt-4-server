@@ -70,19 +70,17 @@ def file_search(description, instruction, prompt_template, filePath):
     # Output text of the Assistant
     res_txt = message.content[0].text.value
 
-    # Because the Assistant can't produce JSON (as we're using "file_search"),
-    # it will likely output text + some JSON code. We can parse and extract just
-    # the JSON part, and ignore everything else (eg. gpt4o will start with something
-    # similar to "Of course, here's the parsed text: {useful_JSON_here}")
+    # # Because the Assistant can't produce JSON (as we're using "file_search"),
+    # # it will likely output text + some JSON code. We can parse and extract just
+    # # the JSON part, and ignore everything else (eg. gpt4o will start with something
+    # # similar to "Of course, here's the parsed text: {useful_JSON_here}")
     if res_txt.startswith('```json'):
-        res_txt = res_txt[6:]
+        res_txt = res_txt[7:]
     if res_txt.endswith('```'):
         res_txt = res_txt[:-3]
-    res_txt = res_txt[:res_txt.rfind('}')+1]
-    res_txt = res_txt[res_txt.find('{'):]
+    # res_txt = res_txt[:res_txt.rfind('}')+1]
+    # res_txt = res_txt[res_txt.find('{'):]
     res_txt.strip()
-
-
     # Parse the JSON output
     data = json.loads(res_txt)
     client.files.delete(file.id)

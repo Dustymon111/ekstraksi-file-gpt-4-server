@@ -23,44 +23,46 @@ class BookExtraction:
 
 class QuestionMaker:
     description = 'You are a question maker assistant.'
-    instruction = "You are a helpful assistant designed to output only JSON. process the information from the file that has been given to make questions with customized JSON output."
+    instruction = "You are a helpful assistant designed to output only JSON. Process the information from the file that has been given to make questions with customized JSON output."
 
-    def __init__(self, topic, number, difficulty):
+    def __init__(self, topic, m_choice_number, essay_number, difficulty):
         self.topic = topic
-        self.number = number
+        self.m_choice_number = m_choice_number
+        self.essay_number = essay_number
         self.difficulty = difficulty
-        self.questionMakerTemplate = f'''
-               Create Questions Based on the file's:
-                Topic: {self.topic}
-                Number: {self.number}
-                Difficulty: {self.difficulty}
-                Question Types:
 
-                Multiple Choice (m_choice): Four options with one correct answer.
-                Multiple Answer (m_answer): Select multiple correct answers.
-                True/False (m_choice): Decide if a statement is true or false.
-                Essay (essay): Requires a detailed written response.
-                Difficulty Levels:
+    def questionMakerTemplate(self):
+        return f'''
+            Create Questions Based on the file information:
+                - Topic: {self.topic}
+                - Multiple Choice Question Count (include multiple choice, true false, and multiple answer questions): {self.m_choice_number}
+                - Essay Question Count : {self.essay_number}
+                - Difficulty: {self.difficulty}
 
-                Beginner: Basic comprehension.
-                Intermediate: Application and easy to medium cases.
-                Expert: Critical thinking and complex scenarios.
-                Example:
+            Question Types:
+                - Multiple Choice (m_choice): Four options with one correct answer.
+                - Multiple Answer (m_answer): Select multiple correct answers.
+                - True/False (m_choice): Decide if a statement is true or false.
+                - Essay (essay): Requires a detailed written response.
 
-                json
-                {{
+            Difficulty Levels:
+                - Beginner: Basic comprehension.
+                - Intermediate: Application and easy to medium cases.
+                - Expert: Critical thinking and analytical complex scenarios.
+
+            Return a List of JSON. Example:
+            [
+                (curly braces open)
                     "text": "Question text",
-                    "options": ["A. option 1", "B. option 2", "C. option 3", "D. option 4"],
-                    "type": "m_choice",
-                    "correctOption": "A. option 1"
-                }}
-                Ensure questions match the difficulty level and stay relevant to the topic.
-                '''
+                    "options": ["option 1", "option 2", "option 3", "option 4"] (for true false type question, only return two options which is true and false),
+                    "type": "m_choice" (follow the question type given above),
+                    "correctOption": "option 1" (if the type is multiple answer, just append the text like this "option 1option 2option 3"")
+                (curly braces close)
+                ,
+                ...
+            ]
+            Note : For essay questions, "options" return [] and "correctOption" return "".
+            Ensure questions match the difficulty level and stay relevant to the topic.
+            '''.format(self.topic, self.m_choice_number, self.essay_number, self.difficulty)
 
-# # Example of using the class
-# topic = "Mathematics"
-# number = 10
-# difficulty = "Intermediate"
 
-# question_maker = QuestionMaker(topic, number, difficulty)
-# print(question_maker.questionMakerTemplate)

@@ -30,15 +30,6 @@ db = firestore.client()
 
 bookExtraction = prompt_template.BookExtraction
 
-# Get the base upload directory from the environment variable or use 'uploads' as default
-base_upload_dir = os.getenv('TEMP_DIR', 'uploads')
-
-# Customize the folder path, e.g., TEMP_DIR/temp
-custom_upload_dir = os.path.join(base_upload_dir, 'temp')
-
-# Ensure the custom directory exists
-os.makedirs(custom_upload_dir, exist_ok=True)
-app.config['UPLOAD_FOLDER'] = custom_upload_dir
 
 
 @app.route('/ekstrak-info', methods=['POST'])
@@ -47,6 +38,14 @@ def upload_file():
     userId = request.form.get('userId')
     bookUrl = request.form.get('bookUrl')
     totalPages = request.form.get('totalPages')
+
+    # Get the base upload directory from the environment variable or use 'uploads' as default
+    base_upload_dir = "./uploads/{}".format(userId)
+
+
+    # Ensure the custom directory exists
+    os.makedirs(base_upload_dir, exist_ok=True)
+    app.config['UPLOAD_FOLDER'] = base_upload_dir
 
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
     file.save(file_path)
@@ -79,7 +78,8 @@ def upload_file():
                 "author": extractData['author'],
                 "bookUrl": bookUrl,
                 "totalPages": int(totalPages),
-                "userId": userId
+                "userId": userId,
+                "filename": file.filename
             })
         except Exception as e:
             print(f'Error creating book document: {e}')
@@ -109,22 +109,61 @@ def upload_file():
 @app.route('/question-maker', methods=['POST'])
 def question_maker():
 
-    topic = request.form.get('topic')
-    number = request.form.get('number')
-    difficulty = request.form.get('difficulty')
-    questionMaker = prompt_template.QuestionMaker(topic=topic, number=number, difficulty=difficulty)
+    data = request.get_json()
+    topic = data.get('topic')
+    m_choice_number = data.get('m_choice_number')
+    essay_number = data.get('essay_number')
+    difficulty = data.get('difficulty')
+    userId = data.get('userId')
+    filename = data.get('filename')
+    subjectId = data.get('subjectId')
+    questionMaker = prompt_template.QuestionMaker(topic=topic, m_choice_number=m_choice_number, essay_number=essay_number, difficulty=difficulty)
+    filepath = "./uploads/{}/{}".format(userId, filename)
 
-    extractData = file_search(
+    print("processing...")
+    questionSetData = file_search(
         description=questionMaker.description, 
         instruction=questionMaker.instruction, 
-        prompt_template=questionMaker.questionMakerTemplate, 
-        filePath=file_path
+        prompt_template=questionMaker.questionMakerTemplate(), 
+        filePath=filepath
     )
 
-    print(f'extractData: {extractData}')
+    print(f'Question Set: {questionSetData}')
+    questionSetRef = db.collection('question_set')
+    try:
+        new_questionSet_ref = questionSetRef.add({
+            "point": 0,
+            "status": "Belum Selesai",
+            "selectedOptions": {},
+            "subjectId": subjectId,
+        })
+    except Exception as e:
+        print(f'Error creating question set document: {e}')
+        return jsonify({'error': 'Failed to create question set document'}), 500
+    
+    print(f'new_questionSet_ref: {new_questionSet_ref[1].id}')  # Debug output
+    new_questionSet_id = new_questionSet_ref[1].id
+    # Add new documents in the 'subjects' subcollection
+    print(new_questionSet_id)
+    print(questionSetData)
+    try:
+        question_ref = questionSetRef.document(new_questionSet_id).collection('question')
+        for question in questionSetData:
+            question_data = {
+                'text': question['text'],
+                'options': question['options'] if not None else [],
+                'questionSetId': new_questionSet_id,
+                'type': question['type'],
+                'correctOption' : question['correctOption'] if not None else ""
+            }
+            print(f'Adding question: {question_data}')  # Debug output
+            question_ref.add(question_data)
+    except Exception as e:
+        print(f'Error adding Question: {e}')
+        return jsonify({'error': 'Failed to Question Set'}), 500
 
 
-    return jsonify({'data': extractData, 'message': "succesfully extracting data from file"})
+    return jsonify({'data': questionSetData, 'message': "succesfully making question Set from file"})
     
 
 
