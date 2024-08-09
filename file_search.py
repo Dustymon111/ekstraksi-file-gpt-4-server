@@ -82,7 +82,10 @@ def file_search(description, instruction, prompt_template, filePath):
     # res_txt = res_txt[res_txt.find('{'):]
     res_txt.strip()
     # Parse the JSON output
+    # print(f"Before decode:\n{res_txt}")
     data = json.loads(res_txt)
+    # print(f"After decode:\n{res_txt}")
+
     client.files.delete(file.id)
 
     return data

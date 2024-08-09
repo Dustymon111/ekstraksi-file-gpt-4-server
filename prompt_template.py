@@ -5,7 +5,7 @@ class BookExtraction:
                 give me the exact title, author, and the lists and very brief description of TOC (if TOC exists) or topics from the file, desired output in json. example:
                 {   
                     'title' : 'article or book or module title (usually Bold, largest font size, found in the first page)',
-                    'author' : ['author', ...] (full name, if exists, could be on "edited by", or "written by". if doesn't exist, return [N/A]),
+                    'author' : ['author', ...] (return full name, could be on "edited by", or "written by". if doesn't exist, return [N/A]),
                     'topics': [
                     {
                         "title": 'Introduction',
@@ -17,7 +17,10 @@ class BookExtraction:
                     },
                     ...]
                 }
+                Note: Return data EXACTLY like the example above. Dont return more data than the requested above.
+                Reference, foreword, thank you note doesn't need to be added to the topics
                 '''
+                
 
 
 
@@ -56,13 +59,52 @@ class QuestionMaker:
                     "text": "Question text",
                     "options": ["option 1", "option 2", "option 3", "option 4"] (for true false type question, only return two options which is true and false),
                     "type": "m_choice" (follow the question type given above),
-                    "correctOption": "option 1" (if the type is multiple answer, just append the text like this "option 1option 2option 3"")
+                    "correctOption": "option 1" for m_choice, list of strings for m_answer
                 (curly braces close)
                 ,
                 ...
             ]
-            Note : For essay questions, "options" return [] and "correctOption" return "".
-            Ensure questions match the difficulty level and stay relevant to the topic.
+            Note : Return data EXACTLY like example above. Dont return more data than the requested above.
+            For essay questions, "options" return [] and "correctOption" return "".
+            Ensure questions match the difficulty level and stay relevant to the topic, and ensure the returned type and the question type followed the rule above.
             '''.format(self.topic, self.m_choice_number, self.essay_number, self.difficulty)
+    
+
+class EssayChecker:
+    description = 'You are a Essay Checker assistant.'
+    instruction = "You are a helpful assistant designed to output only JSON. Process the information from the file that has been given to check user's answer with customized JSON output."
+
+    def __init__(self, answers):
+        self.answers = answers
+
+    def essayCheckerTemplate(self):
+        return f'''
+            You will be given a list of objects of user's answers according to the essay questions. input example: 
+            [
+                (curly braces open)
+                    "question" : "Explain what is 2nd newton's rule",
+                    "answer" : "Newton 2nd rule is explaining about ...."
+                (curly braces close),
+                ...
+            ]
+            check and decide if the user's answer to the question is correct or incorrect according to the file that has been given.
+
+            this is the input data: 
+                {self.answers}
+
+            Return a List of JSON. Example:
+            (curly braces open)
+                answers: [
+                            (curly braces open)
+                                "question": "Question text",
+                                "correctOption": (if the user's answer is correct, return "correct", otherwise return the correct improvement of the user's wrong answer. make it brief but clear, do not include source)
+                            (curly braces close)
+                            ,
+                            ...
+                        ]
+                correct_answers: (the number of correct answers after checking)
+            (curly braces close)
+            Note : Return data EXACTLY like example above. Dont return more data than the requested above. Don't be very strict. If the user's answer is a little bit off, but still manage to give the correct point, return "correct".
+            '''
 
 

@@ -56,12 +56,13 @@ def upload_file():
         prompt_template=bookExtraction.bookExtractionTemplate, 
         filePath=file_path
     )
-
+    print("processing...")
     print(f'extractData: {extractData}')
 
     # Fetch books for the current user
     books_ref = db.collection('books')
     book_query = books_ref.where('userId', '==', userId).stream()
+    user_ref = db.collection('users').document(userId)
 
     # Check for duplicates
     is_duplicate = any(
@@ -85,6 +86,7 @@ def upload_file():
             print(f'Error creating book document: {e}')
             return jsonify({'error': 'Failed to create book document'}), 500
         
+
         print(f'new_book_ref: {new_book_ref[1].id}')  # Debug output
         new_book_id = new_book_ref[1].id
         # Add new documents in the 'subjects' subcollection
@@ -103,6 +105,28 @@ def upload_file():
         except Exception as e:
             print(f'Error adding subjects: {e}')
             return jsonify({'error': 'Failed to add subjects'}), 500
+        
+        try:
+            # Reference to the user document
+            user_ref = db.collection('users').document(userId)
+
+            # Get the current bookmarkIds
+            user_doc = user_ref.get()
+            if not user_doc.exists:
+                return jsonify({"message": "User does not exist"}), 404
+
+            current_data = user_doc.to_dict()
+            current_bookmark_ids = current_data.get('bookmarkIds', [])
+
+            # Add the new bookmarkId to the list if it's not already present
+            if new_book_id not in current_bookmark_ids:
+                current_bookmark_ids.append(new_book_id)
+                # Update the document
+                user_ref.update({"bookmarkIds": current_bookmark_ids})
+
+            print(f"Bookmark ID added successfully to user {userId}")
+        except Exception as e:
+            return jsonify({"message": f"Cannot add bookmark ID to user's list: {str(e)}"}), 500
 
     return jsonify({'data': extractData, 'message': "succesfully extracting data from file"})
 
@@ -136,6 +160,7 @@ def question_maker():
             "status": "Belum Selesai",
             "selectedOptions": {},
             "subjectId": subjectId,
+            "questionCount": len(questionSetData),
         })
     except Exception as e:
         print(f'Error creating question set document: {e}')
@@ -144,8 +169,6 @@ def question_maker():
     print(f'new_questionSet_ref: {new_questionSet_ref[1].id}')  # Debug output
     new_questionSet_id = new_questionSet_ref[1].id
     # Add new documents in the 'subjects' subcollection
-    print(new_questionSet_id)
-    print(questionSetData)
     try:
         question_ref = questionSetRef.document(new_questionSet_id).collection('question')
         for question in questionSetData:
@@ -160,10 +183,57 @@ def question_maker():
             question_ref.add(question_data)
     except Exception as e:
         print(f'Error adding Question: {e}')
-        return jsonify({'error': 'Failed to Question Set'}), 500
+        return jsonify({'error': 'Failed adding questions to question set'}), 500
+
+    try:
+        subject_ref = db.collection_group('subjects').stream()
+        for doc in subject_ref:
+            if doc.id == subjectId:
+                doc.reference.update({
+                    'questionSetIds': firestore.ArrayUnion([new_questionSet_id])
+                })
+    except Exception as e:
+        print(f'Error updating Question Set Id: {e}')
+        return jsonify({'error': 'Failed updating questionSetIds on subject'}), 500
 
 
     return jsonify({'data': questionSetData, 'message': "succesfully making question Set from file"})
+
+
+@app.route('/essay-checker', methods=['POST'])
+def essay_checker():
+
+    data = request.get_json()
+    answers = data.get('answers')
+    userId = data.get('userId')
+    filename = data.get('filename')
+    questionSetId = data.get('questionSetId')
+    essay_check_template = prompt_template.EssayChecker(answers=answers)
+    filepath = "./uploads/{}/{}".format(userId, filename)
+
+    print("processing")
+    check_result = file_search(
+        description=essay_check_template.description,
+        instruction=essay_check_template.description,
+        prompt_template=essay_check_template.essayCheckerTemplate(),
+        filePath=filepath
+    )
+    questionSetRef = db.collection('question_set')
+    question_collection = questionSetRef.document(questionSetId).collection('question')
+
+    # Iterate over the check_result['answers']
+    for result in check_result['answers']:
+        # Query to find the document with the matching question text
+        question_doc = question_collection.where('text', '==', result['question'])
+        # Update the correctOption in the matching document(s)
+        for doc in question_doc.stream():
+            doc.reference.update({
+                'correctOption': result['correctOption']
+            })
+
+    return jsonify({"response_data": check_result,'message': "succesfully checking answer"})
+    
+
     
 
 
