@@ -102,7 +102,15 @@ def upload_file():
                 }
                 print(f'Adding subject: {subject_data}')  # Debug output
                 subjects_ref.add(subject_data)
-        except Exception as e:
+                if i == len(extractData['topics']) - 1:
+                    subjects_ref.add({
+                        'title': "Custom Topic",
+                        'description': "Exercises for custom topic",
+                        'questionSetIds': [],
+                        'bookmarkId': new_book_id,
+                        'sortIndex': i + 1,
+                    })
+        except Exception as e:  
             print(f'Error adding subjects: {e}')
             return jsonify({'error': 'Failed to add subjects'}), 500
         
@@ -134,14 +142,16 @@ def upload_file():
 def question_maker():
 
     data = request.get_json()
-    topic = data.get('topic')
+    topic = data.get('topics')
     m_choice_number = data.get('m_choice_number')
     essay_number = data.get('essay_number')
     difficulty = data.get('difficulty')
+    language = data.get('language')
     userId = data.get('userId')
     filename = data.get('filename')
     subjectId = data.get('subjectId')
-    questionMaker = prompt_template.QuestionMaker(topic=topic, m_choice_number=m_choice_number, essay_number=essay_number, difficulty=difficulty)
+    bookId = data.get('bookId')
+    questionMaker = prompt_template.QuestionMaker(topic=topic, m_choice_number=m_choice_number, essay_number=essay_number, difficulty=difficulty, language=language)
     filepath = "./uploads/{}/{}".format(userId, filename)
 
     print("processing...")
@@ -154,12 +164,28 @@ def question_maker():
 
     print(f'Question Set: {questionSetData}')
     questionSetRef = db.collection('question_set')
+    subject_ref = db.collection('books').document(bookId).collection('subjects')
+    custom_topic_docs = subject_ref.where('title', '==', 'Custom Topic').stream()
+
+     # Initialize a variable to hold the subject ID
+    custom_topic_id = None
+    
+    # Get the first document that matches the "Custom Topic"
+    for doc in custom_topic_docs:
+        custom_topic_id = doc.id
+        break  # Stop after the first match since we only need one
+
+    # Determine the subject ID to use
+    selected_subject_id = custom_topic_id if len(topic) != 1 else subjectId
+
+    print(selected_subject_id)
+    print(len(questionSetData))
     try:
         new_questionSet_ref = questionSetRef.add({
             "point": 0,
             "status": "Belum Selesai",
             "selectedOptions": {},
-            "subjectId": subjectId,
+            "subjectId": selected_subject_id,
             "questionCount": len(questionSetData),
         })
     except Exception as e:
@@ -168,6 +194,12 @@ def question_maker():
     
     print(f'new_questionSet_ref: {new_questionSet_ref[1].id}')  # Debug output
     new_questionSet_id = new_questionSet_ref[1].id
+
+
+    subject_ref.document(selected_subject_id).update({
+        'questionSetIds': firestore.ArrayUnion([new_questionSet_id])
+    })
+
     # Add new documents in the 'subjects' subcollection
     try:
         question_ref = questionSetRef.document(new_questionSet_id).collection('question')
@@ -184,17 +216,6 @@ def question_maker():
     except Exception as e:
         print(f'Error adding Question: {e}')
         return jsonify({'error': 'Failed adding questions to question set'}), 500
-
-    try:
-        subject_ref = db.collection_group('subjects').stream()
-        for doc in subject_ref:
-            if doc.id == subjectId:
-                doc.reference.update({
-                    'questionSetIds': firestore.ArrayUnion([new_questionSet_id])
-                })
-    except Exception as e:
-        print(f'Error updating Question Set Id: {e}')
-        return jsonify({'error': 'Failed updating questionSetIds on subject'}), 500
 
 
     return jsonify({'data': questionSetData, 'message': "succesfully making question Set from file"})

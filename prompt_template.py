@@ -28,19 +28,21 @@ class QuestionMaker:
     description = 'You are a question maker assistant.'
     instruction = "You are a helpful assistant designed to output only JSON. Process the information from the file that has been given to make questions with customized JSON output."
 
-    def __init__(self, topic, m_choice_number, essay_number, difficulty):
+    def __init__(self, topic, m_choice_number, essay_number, difficulty, language):
         self.topic = topic
         self.m_choice_number = m_choice_number
         self.essay_number = essay_number
         self.difficulty = difficulty
+        self.language = language
 
     def questionMakerTemplate(self):
         return f'''
             Create Questions Based on the file information:
-                - Topic: {self.topic}
+                - Topic: {self.topic} (could be more than 1 topic. if it is more than one topic, try to make combination of the questions from the topics given or try to distribute the topics for all questions evenly)
                 - Multiple Choice Question Count (include multiple choice, true false, and multiple answer questions): {self.m_choice_number}
                 - Essay Question Count : {self.essay_number}
                 - Difficulty: {self.difficulty}
+                - Language: {self.language} (If the value is "Book's Original", return all the questions in book's original language).
 
             Question Types:
                 - Multiple Choice (m_choice): Four options with one correct answer.
@@ -52,6 +54,7 @@ class QuestionMaker:
                 - Beginner: Basic comprehension.
                 - Intermediate: Application and easy to medium cases.
                 - Expert: Critical thinking and analytical complex scenarios.
+                - Combined: Combination of Beginner, Intermediate, and Expert.
 
             Return a List of JSON. Example:
             [
@@ -67,7 +70,7 @@ class QuestionMaker:
             Note : Return data EXACTLY like example above. Dont return more data than the requested above.
             For essay questions, "options" return [] and "correctOption" return "".
             Ensure questions match the difficulty level and stay relevant to the topic, and ensure the returned type and the question type followed the rule above.
-            '''.format(self.topic, self.m_choice_number, self.essay_number, self.difficulty)
+            '''.format(self.topic, self.m_choice_number, self.essay_number, self.difficulty, self.language)
     
 
 class EssayChecker:
