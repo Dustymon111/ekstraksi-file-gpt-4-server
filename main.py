@@ -50,13 +50,13 @@ def upload_file():
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
     file.save(file_path)
 
+    print("processing...")
     extractData = file_search(
         description=bookExtraction.description, 
         instruction=bookExtraction.instruction, 
         prompt_template=bookExtraction.bookExtractionTemplate, 
         filePath=file_path
     )
-    print("processing...")
     print(f'extractData: {extractData}')
 
     # Fetch books for the current user
@@ -178,8 +178,6 @@ def question_maker():
     # Determine the subject ID to use
     selected_subject_id = custom_topic_id if len(topic) != 1 else subjectId
 
-    print(selected_subject_id)
-    print(len(questionSetData))
     try:
         new_questionSet_ref = questionSetRef.add({
             "point": 0,
@@ -232,13 +230,14 @@ def essay_checker():
     essay_check_template = prompt_template.EssayChecker(answers=answers)
     filepath = "./uploads/{}/{}".format(userId, filename)
 
-    print("processing")
+    print("processing...")
     check_result = file_search(
         description=essay_check_template.description,
         instruction=essay_check_template.description,
         prompt_template=essay_check_template.essayCheckerTemplate(),
         filePath=filepath
     )
+    print(check_result)
     questionSetRef = db.collection('question_set')
     question_collection = questionSetRef.document(questionSetId).collection('question')
 

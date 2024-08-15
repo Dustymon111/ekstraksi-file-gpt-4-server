@@ -38,7 +38,7 @@ class QuestionMaker:
     def questionMakerTemplate(self):
         return f'''
             Create Questions Based on the file information:
-                - Topic: {self.topic} (could be more than 1 topic. if it is more than one topic, try to make combination of the questions from the topics given or try to distribute the topics for all questions evenly)
+                - Topic: {self.topic} (could be more than one topic. try to combine questions from the topics given or distribute all the topics evenly)
                 - Multiple Choice Question Count (include multiple choice, true false, and multiple answer questions): {self.m_choice_number}
                 - Essay Question Count : {self.essay_number}
                 - Difficulty: {self.difficulty}
@@ -82,6 +82,7 @@ class EssayChecker:
 
     def essayCheckerTemplate(self):
         return f'''
+            The given data could be in English or Bahasa.
             You will be given a list of objects of user's answers according to the essay questions. input example: 
             [
                 (curly braces open)
@@ -100,14 +101,15 @@ class EssayChecker:
                 answers: [
                             (curly braces open)
                                 "question": "Question text",
-                                "correctOption": (if the user's answer is correct, return "correct", otherwise return the correct improvement of the user's wrong answer. make it brief but clear, do not include source)
+                                "correctOption": (if the user's answer is correct, return the original user's answer. Otherwise, return the correct improvement of the user's wrong answer. make it brief but clear, do not include sources)
                             (curly braces close)
                             ,
                             ...
                         ]
-                correct_answers: (the number of correct answers after checking)
+                correct_answers: (return the count number of correct answers after checking the answers)
             (curly braces close)
-            Note : Return data EXACTLY like example above. Dont return more data than the requested above. Don't be very strict. If the user's answer is a little bit off, but still manage to give the correct point, return "correct".
+            Note :  If the given data is in Bahasa, return the corrected answer in Bahasa, otherwise return in English. 
+            Return data EXACTLY like example above. Dont return more data than the requested above. Don't be very strict. If the user's answer is a little bit off, but still manage to give the correct point, return "correct".
             '''
 
 
