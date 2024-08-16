@@ -5,6 +5,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from file_search import file_search
 import prompt_template
+from datetime import date
 
 # Load environment variables
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -143,6 +144,7 @@ def question_maker():
 
     data = request.get_json()
     topic = data.get('topics')
+    title = data.get('title')
     m_choice_number = data.get('m_choice_number')
     essay_number = data.get('essay_number')
     difficulty = data.get('difficulty')
@@ -165,6 +167,7 @@ def question_maker():
     print(f'Question Set: {questionSetData}')
     questionSetRef = db.collection('question_set')
     subject_ref = db.collection('books').document(bookId).collection('subjects')
+    user_ref = db.collection('users').document(userId)
     custom_topic_docs = subject_ref.where('title', '==', 'Custom Topic').stream()
 
      # Initialize a variable to hold the subject ID
@@ -181,10 +184,12 @@ def question_maker():
     try:
         new_questionSet_ref = questionSetRef.add({
             "point": 0,
+            "title": title,
             "status": "Belum Selesai",
             "selectedOptions": {},
             "subjectId": selected_subject_id,
             "questionCount": len(questionSetData),
+            "createdAt": date.today().isoformat()
         })
     except Exception as e:
         print(f'Error creating question set document: {e}')
@@ -193,8 +198,10 @@ def question_maker():
     print(f'new_questionSet_ref: {new_questionSet_ref[1].id}')  # Debug output
     new_questionSet_id = new_questionSet_ref[1].id
 
-
     subject_ref.document(selected_subject_id).update({
+        'questionSetIds': firestore.ArrayUnion([new_questionSet_id])
+    })
+    user_ref.update({
         'questionSetIds': firestore.ArrayUnion([new_questionSet_id])
     })
 
@@ -238,8 +245,13 @@ def essay_checker():
         filePath=filepath
     )
     print(check_result)
-    questionSetRef = db.collection('question_set')
-    question_collection = questionSetRef.document(questionSetId).collection('question')
+
+    questionSetRef = db.collection('question_set').document(questionSetId)
+    question_collection = questionSetRef.collection('question')
+
+    questionSetRef.set({
+        'finishedAt': date.today().isoformat()
+    }, merge=True) 
 
     # Iterate over the check_result['answers']
     for result in check_result['answers']:
@@ -254,7 +266,11 @@ def essay_checker():
     return jsonify({"response_data": check_result,'message': "succesfully checking answer"})
     
 
-    
+
+# def compute_rouge(reference, generated):
+#     scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+#     scores = scorer.score(reference, generated)
+#     return scores
 
 
 
