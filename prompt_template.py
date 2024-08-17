@@ -101,15 +101,15 @@ class EssayChecker:
                 answers: [
                             (curly braces open)
                                 "question": "Question text",
-                                "correctOption": (if the user's answer is correct, return the original user's answer. Otherwise, return the correct improvement of the user's wrong answer. make it brief but clear, do not include sources)
+                                "correctOption": (if the user's answer is correct, return the original user's answer. Otherwise, return the correct answer or improve the user's mistake in the answer. make it brief but clear, include source page number. You could rewrite exactly like the reference if the answer is exist)
                             (curly braces close)
                             ,
                             ...
                         ]
-                correct_answers: (return the count number of correct answers after checking the answers)
+                correct_answers: (return the number of user's correct answers after checking)
             (curly braces close)
             Note :  If the given data is in Bahasa, return the corrected answer in Bahasa, otherwise return in English. 
-            Return data EXACTLY like example above. Dont return more data than the requested above. Don't be very strict. If the user's answer is a little bit off, but still manage to give the correct point, return "correct".
+            Return data EXACTLY like example above. Dont return more data than the requested above. Don't be strict and ignore case sensitive. try to compare user's answer and the reference from the file.
             '''
 
 

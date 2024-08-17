@@ -51,15 +51,12 @@ def upload_file():
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
     file.save(file_path)
 
-    print("processing...")
     extractData = file_search(
         description=bookExtraction.description, 
         instruction=bookExtraction.instruction, 
         prompt_template=bookExtraction.bookExtractionTemplate, 
         filePath=file_path
     )
-    print(f'extractData: {extractData}')
-
     # Fetch books for the current user
     books_ref = db.collection('books')
     book_query = books_ref.where('userId', '==', userId).stream()
@@ -84,11 +81,9 @@ def upload_file():
                 "filename": file.filename
             })
         except Exception as e:
-            print(f'Error creating book document: {e}')
             return jsonify({'error': 'Failed to create book document'}), 500
         
 
-        print(f'new_book_ref: {new_book_ref[1].id}')  # Debug output
         new_book_id = new_book_ref[1].id
         # Add new documents in the 'subjects' subcollection
         try:
@@ -101,7 +96,6 @@ def upload_file():
                     'bookmarkId': new_book_id,
                     'sortIndex': i,
                 }
-                print(f'Adding subject: {subject_data}')  # Debug output
                 subjects_ref.add(subject_data)
                 if i == len(extractData['topics']) - 1:
                     subjects_ref.add({
@@ -112,7 +106,6 @@ def upload_file():
                         'sortIndex': i + 1,
                     })
         except Exception as e:  
-            print(f'Error adding subjects: {e}')
             return jsonify({'error': 'Failed to add subjects'}), 500
         
         try:
@@ -133,7 +126,6 @@ def upload_file():
                 # Update the document
                 user_ref.update({"bookmarkIds": current_bookmark_ids})
 
-            print(f"Bookmark ID added successfully to user {userId}")
         except Exception as e:
             return jsonify({"message": f"Cannot add bookmark ID to user's list: {str(e)}"}), 500
 
@@ -156,7 +148,6 @@ def question_maker():
     questionMaker = prompt_template.QuestionMaker(topic=topic, m_choice_number=m_choice_number, essay_number=essay_number, difficulty=difficulty, language=language)
     filepath = "./uploads/{}/{}".format(userId, filename)
 
-    print("processing...")
     questionSetData = file_search(
         description=questionMaker.description, 
         instruction=questionMaker.instruction, 
@@ -164,7 +155,6 @@ def question_maker():
         filePath=filepath
     )
 
-    print(f'Question Set: {questionSetData}')
     questionSetRef = db.collection('question_set')
     subject_ref = db.collection('books').document(bookId).collection('subjects')
     user_ref = db.collection('users').document(userId)
@@ -192,10 +182,8 @@ def question_maker():
             "createdAt": date.today().isoformat()
         })
     except Exception as e:
-        print(f'Error creating question set document: {e}')
         return jsonify({'error': 'Failed to create question set document'}), 500
     
-    print(f'new_questionSet_ref: {new_questionSet_ref[1].id}')  # Debug output
     new_questionSet_id = new_questionSet_ref[1].id
 
     subject_ref.document(selected_subject_id).update({
@@ -216,10 +204,8 @@ def question_maker():
                 'type': question['type'],
                 'correctOption' : question['correctOption'] if not None else ""
             }
-            print(f'Adding question: {question_data}')  # Debug output
             question_ref.add(question_data)
     except Exception as e:
-        print(f'Error adding Question: {e}')
         return jsonify({'error': 'Failed adding questions to question set'}), 500
 
 
@@ -237,14 +223,12 @@ def essay_checker():
     essay_check_template = prompt_template.EssayChecker(answers=answers)
     filepath = "./uploads/{}/{}".format(userId, filename)
 
-    print("processing...")
     check_result = file_search(
         description=essay_check_template.description,
         instruction=essay_check_template.description,
         prompt_template=essay_check_template.essayCheckerTemplate(),
         filePath=filepath
     )
-    print(check_result)
 
     questionSetRef = db.collection('question_set').document(questionSetId)
     question_collection = questionSetRef.collection('question')
