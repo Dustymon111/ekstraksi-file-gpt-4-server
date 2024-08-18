@@ -247,7 +247,7 @@ def essay_checker():
                 'correctOption': result['correctOption']
             })
 
-    return jsonify({"response_data": check_result,'message': "succesfully checking answer"})
+    return jsonify({"data": check_result,'message': "succesfully checking answer"})
     
 
 

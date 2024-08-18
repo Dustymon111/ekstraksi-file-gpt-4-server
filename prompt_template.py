@@ -91,25 +91,31 @@ class EssayChecker:
                 (curly braces close),
                 ...
             ]
-            check and decide if the user's answer to the question is correct or incorrect according to the file that has been given.
-
             this is the input data: 
                 {self.answers}
+            
+            You will also be provided with reference answers for these questions. Your task is to:
+                1. Check if the user's answer is correct or incorrect. Be flexible and open-minded. If the user's answer is close to the correct answer, consider it correct.
+                2. Return a JSON list with the following structure:
 
-            Return a List of JSON. Example:
             (curly braces open)
                 answers: [
                             (curly braces open)
                                 "question": "Question text",
-                                "correctOption": (if the user's answer is correct, return the original user's answer. Otherwise, return the correct answer or improve the user's mistake in the answer. make it brief but clear, include source page number. You could rewrite exactly like the reference if the answer is exist)
+                                "correctOption": (if the user's answer is correct, return the EXACT original user's answer. If the user's answer is incorrect, return the correct answer as similar as possible to the reference. Make it brief and clear, following the reference if necessary),
+                                "correct": (boolean, if the user's answer is correct, return true; otherwise, return false)
                             (curly braces close)
                             ,
                             ...
                         ]
                 correct_answers: (return the number of user's correct answers after checking)
             (curly braces close)
-            Note :  If the given data is in Bahasa, return the corrected answer in Bahasa, otherwise return in English. 
-            Return data EXACTLY like example above. Dont return more data than the requested above. Don't be strict and ignore case sensitive. try to compare user's answer and the reference from the file.
+
+            Note:
+                - Be explicit: if the answer is correct, do not rewrite or alter the original user's answer; simply return it as is.
+                - If the given data is in Bahasa, return in Bahasa. Otherwise, return in English.
+                - Do not return more data than the requested above. 
+                - Be flexible, Ignore case sensitivity or a little bit of typo.
             '''
 
 
