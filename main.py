@@ -251,14 +251,6 @@ def essay_checker():
     
 
 
-# def compute_rouge(reference, generated):
-#     scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
-#     scores = scorer.score(reference, generated)
-#     return scores
-
-
-
-
 @app.route('/')
 def hello():
     return "Hello, New World!"

@@ -37,7 +37,7 @@ class QuestionMaker:
 
     def questionMakerTemplate(self):
         return f'''
-            Create Questions Based on the file information:
+            Create Questions Based on the information from the file:
                 - Topic: {self.topic} (could be more than one topic. try to combine questions from the topics given or distribute all the topics evenly)
                 - Multiple Choice Question Count (include multiple choice, true false, and multiple answer questions): {self.m_choice_number}
                 - Essay Question Count : {self.essay_number}
@@ -94,8 +94,8 @@ class EssayChecker:
             this is the input data: 
                 {self.answers}
             
-            You will also be provided with reference answers for these questions. Your task is to:
-                1. Check if the user's answer is correct or incorrect. Be flexible and open-minded. If the user's answer is close to the correct answer, consider it correct.
+            Your task is to:
+                1. Check if the user's answer is correct or incorrect. If the user's answer is close to the correct answer, consider it correct.
                 2. Return a JSON list with the following structure:
 
             (curly braces open)
