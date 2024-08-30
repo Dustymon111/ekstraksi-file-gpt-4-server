@@ -40,10 +40,10 @@ class QuestionMaker:
             Task: Generate questions from the given file content.
 
             Parameters:
-                Topic: {self.topic} (Use all topics evenly or combine them as needed)
+                Topic: {self.topic} (Distribute questions evenly across all topics. If the total number of questions doesn't divide evenly, assign the extra questions to the first topics in the list.)
                 Question Count:
-                Multiple Choice (m_choice), True/False, Multiple Answer: {self.m_choice_number}
-                Essay: {self.essay_number}
+                    Multiple Choice (m_choice), True/False, Multiple Answer: {self.m_choice_number}
+                    Essay: {self.essay_number}
                 Difficulty: {self.difficulty} (For "Combined," distribute 33.3% Beginner, 33.3% Intermediate, and 33.3% Expert)
                 Language: {self.language} ("Book's Original" returns questions in the book's language)
 
@@ -61,7 +61,6 @@ class QuestionMaker:
                     "type": "m_choice" (follow the question type given above),
                     "correctOption": "option 1" for m_choice, list of strings for m_answer,
                     "difficulty" : question's difficulty level,
-                    "topic": the topic of the question is based 
                 (curly braces close)
                 ,
                 ...
