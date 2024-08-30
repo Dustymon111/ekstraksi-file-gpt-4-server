@@ -220,6 +220,7 @@ def essay_checker():
     userId = data.get('userId')
     filename = data.get('filename')
     questionSetId = data.get('questionSetId')
+    duration = data.get('duration')
     essay_check_template = prompt_template.EssayChecker(answers=answers)
     filepath = "./uploads/{}/{}".format(userId, filename)
 
@@ -234,7 +235,8 @@ def essay_checker():
     question_collection = questionSetRef.collection('question')
 
     questionSetRef.set({
-        'finishedAt': date.today().isoformat()
+        'finishedAt': date.today().isoformat(),
+        'duration' : duration
     }, merge=True) 
 
     # Iterate over the check_result['answers']

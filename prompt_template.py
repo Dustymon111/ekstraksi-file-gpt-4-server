@@ -37,24 +37,21 @@ class QuestionMaker:
 
     def questionMakerTemplate(self):
         return f'''
-            Create Questions Based on the information from the file:
-                - Topic: {self.topic} (could be more than one topic. try to combine questions from the topics given or distribute all the topics evenly)
-                - Multiple Choice Question Count (include multiple choice, true false, and multiple answer questions): {self.m_choice_number}
-                - Essay Question Count : {self.essay_number}
-                - Difficulty: {self.difficulty}
-                - Language: {self.language} (If the value is "Book's Original", return all the questions in book's original language).
+            Task: Generate questions from the given file content.
+
+            Parameters:
+                Topic: {self.topic} (Use all topics evenly or combine them as needed)
+                Question Count:
+                Multiple Choice (m_choice), True/False, Multiple Answer: {self.m_choice_number}
+                Essay: {self.essay_number}
+                Difficulty: {self.difficulty} (For "Combined," distribute 33.3% Beginner, 33.3% Intermediate, and 33.3% Expert)
+                Language: {self.language} ("Book's Original" returns questions in the book's language)
 
             Question Types:
-                - Multiple Choice (m_choice): Four options with one correct answer.
-                - Multiple Answer (m_answer): Select multiple correct answers.
-                - True/False (m_choice): Decide if a statement is true or false.
-                - Essay (essay): Requires a detailed written response.
-
-            Difficulty Levels:
-                - Beginner: Basic comprehension.
-                - Intermediate: Application and easy to medium cases.
-                - Expert: Critical thinking and analytical complex scenarios.
-                - Combined: Combination of Beginner, Intermediate, and Expert.
+                Multiple Choice (m_choice): Four options, one correct.
+                Multiple Answer (m_answer): Multiple correct options.
+                True/False (m_choice): Two options: True, False.
+                Essay (essay): Requires a written response.
 
             Return a List of JSON. Example:
             [
@@ -62,7 +59,9 @@ class QuestionMaker:
                     "text": "Question text",
                     "options": ["option 1", "option 2", "option 3", "option 4"] (for true false type question, only return two options which is true and false),
                     "type": "m_choice" (follow the question type given above),
-                    "correctOption": "option 1" for m_choice, list of strings for m_answer
+                    "correctOption": "option 1" for m_choice, list of strings for m_answer,
+                    "difficulty" : question's difficulty level,
+                    "topic": the topic of the question is based 
                 (curly braces close)
                 ,
                 ...
@@ -95,7 +94,7 @@ class EssayChecker:
                 {self.answers}
             
             Your task is to:
-                1. Check if the user's answer is correct or incorrect. If the user's answer is close to the correct answer, consider it correct.
+                1. Check if the user's answer is correct or incorrect based on the given file. If the user's answer is close to the correct answer, consider it correct.
                 2. Return a JSON list with the following structure:
 
             (curly braces open)
