@@ -45,12 +45,12 @@ class QuestionMaker:
                     Multiple Choice (m_choice), True/False, Multiple Answer: {self.m_choice_number}
                     Essay: {self.essay_number}
                 Difficulty: {self.difficulty} (For "Combined," distribute 33.3% Beginner, 33.3% Intermediate, and 33.3% Expert)
-                Language: {self.language} ("Book's Original" returns questions in the book's language)
+                Language: {self.language} (For "Book's Original", returns questions in the book's language)
 
             Question Types:
-                Multiple Choice (m_choice): Four options, one correct.
-                Multiple Answer (m_answer): Multiple correct options.
-                True/False (m_choice): Two options: True, False.
+                Multiple Choice (m_choice): consist of four options, only one option is correct.
+                True/False (m_choice): Two options: True, False. (same type as the multiple choice)
+                Multiple Answer (m_answer): consisting of four options, Multiple correct options.
                 Essay (essay): Requires a written response.
 
             Return a List of JSON. Example:
@@ -65,7 +65,9 @@ class QuestionMaker:
                 ,
                 ...
             ]
-            Note : Return data EXACTLY like example above. Dont return more data than the requested above.
+            Note : 
+            True/False returns the same type as multiple choice, which is m_choice.
+            Return data EXACTLY like example above. Dont return more data than the requested above.
             For essay questions, "options" return [] and "correctOption" return "".
             Ensure questions match the difficulty level and stay relevant to the topic, and ensure the returned type and the question type followed the rule above.
             '''.format(self.topic, self.m_choice_number, self.essay_number, self.difficulty, self.language)

@@ -155,6 +155,7 @@ dmypy.json
 cython_debug/
 
 rouge_metric.py
+pkpadmin,+529-2711-1-CE.pdf
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
